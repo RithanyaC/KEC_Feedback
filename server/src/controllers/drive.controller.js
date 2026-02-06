@@ -35,9 +35,9 @@ exports.createDrive = async (req, res) => {
 
 exports.getDrivesByDepartment = async (req, res) => {
     try {
-        const { department } = req.user; // Assuming coordinator has department in token/db
+        const { department } = req.user;
+        console.log(`[DEBUG] Fetching Drives for Dept: '${department}'`);
 
-        // If admin, maybe allow query param? For now restrict to user's dept or ALL
         const drives = await prisma.placementDrive.findMany({
             where: {
                 department: department

@@ -99,7 +99,11 @@ const StudentSubmit = () => {
             navigate('/student/feedbacks');
         } catch (error) {
             console.error(error);
-            alert('Failed to submit. Check inputs.');
+            const msg = error.response?.data?.message || error.response?.data?.errors?.[0]?.message || 'Failed to submit. Check inputs.';
+            alert(`Error: ${msg}`);
+            if (error.response?.data?.errors) {
+                console.log("Validation Errors:", error.response.data.errors);
+            }
         } finally {
             setLoading(false);
         }

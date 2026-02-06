@@ -35,11 +35,11 @@ const submitFeedback = async (req, res) => {
         const feedback = await prisma.feedback.create({
             data: {
                 studentId: userId,
-                driveId: data.driveId,
+                driveId: data.driveId || undefined, // Convert "" to undefined to avoid FK violation
                 companyName: data.companyName,
                 department: department,
                 jobRole: data.jobRole,
-                package: data.package,
+                package: data.package || null,
                 overallDifficulty: data.overallDifficulty,
                 tips: data.tips,
                 suggestions: data.suggestions,
@@ -53,11 +53,15 @@ const submitFeedback = async (req, res) => {
 
         res.status(201).json({ message: 'Feedback submitted successfully.', feedback });
     } catch (error) {
+        // Detailed logging
+        console.error("Submit Feedback Error:", error);
+        if (error.code) console.error("Error Code:", error.code);
+        if (error.meta) console.error("Error Meta:", error.meta);
+
         if (error instanceof z.ZodError) {
             return res.status(400).json({ errors: error.errors });
         }
-        console.error("Submit Feedback Error:", error);
-        res.status(500).json({ message: 'Internal server error.' });
+        res.status(500).json({ message: `Internal server error: ${error.message}` });
     }
 };
 
@@ -70,7 +74,10 @@ const getFeedbacks = async (req, res) => { // Public/Approved
 
         const feedbacks = await prisma.feedback.findMany({
             where,
-            include: { student: { select: { name: true, department: true } } },
+            include: {
+                student: { select: { name: true, department: true } },
+                rounds: true
+            },
             orderBy: { createdAt: 'desc' },
         });
         res.json(feedbacks);
@@ -95,11 +102,16 @@ const getAllFeedbacksAdmin = async (req, res) => {
 const getPendingFeedbacksByDept = async (req, res) => { // Coordinator
     try {
         const { department } = req.user;
+        console.log(`[DEBUG] Fetching Pending for Dept: '${department}' (User ID: ${req.user.id})`);
+
         if (!department) return res.status(400).json({ message: 'Coordinator department not found.' });
 
         const feedbacks = await prisma.feedback.findMany({
             where: { department, status: 'PENDING' },
-            include: { student: { select: { name: true, rollNumber: true } } },
+            include: {
+                student: { select: { name: true, rollNumber: true } },
+                rounds: true
+            },
         });
         res.json(feedbacks);
     } catch (error) {

@@ -67,9 +67,9 @@ const CoordinatorDashboard = () => {
                                 <h3 className="text-xl font-bold text-gray-900">{item.companyName}</h3>
                                 <div className="flex items-center gap-2 mt-1">
                                     <span className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded uppercase tracking-wide">
-                                        {item.roundType}
+                                        {item.jobRole}
                                     </span>
-                                    <span className="text-sm text-gray-500">• {item.difficulty} Difficulty</span>
+                                    <span className="text-sm text-gray-500">• {item.overallDifficulty} Overall</span>
                                 </div>
                             </div>
                             <div className="text-right">
@@ -79,12 +79,24 @@ const CoordinatorDashboard = () => {
                         </div>
 
                         <div className="space-y-4 mb-6">
-                            <div className="bg-gray-50 p-4 rounded-lg">
-                                <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            {/* Rounds Summary */}
+                            <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                                <h4 className="text-sm font-semibold text-gray-700 flex items-center">
                                     <MessageSquare className="w-4 h-4 mr-2" />
-                                    Interview Experience
+                                    Interview Rounds
                                 </h4>
-                                <p className="text-gray-600 text-sm whitespace-pre-wrap leading-relaxed">{item.experience}</p>
+                                {item.rounds && item.rounds.map((round, idx) => (
+                                    <div key={idx} className="border-l-2 border-indigo-200 pl-3">
+                                        <div className="flex justify-between text-xs font-bold text-gray-600 mb-1">
+                                            <span>Round {round.roundNumber}: {round.roundType}</span>
+                                            <span>{round.difficulty}</span>
+                                        </div>
+                                        <p className="text-gray-600 text-sm">{round.experience}</p>
+                                        {round.questions && (
+                                            <p className="text-gray-500 text-xs mt-1 italic">Q: {round.questions}</p>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
 
                             {(item.tips || item.suggestions) && (

@@ -1,18 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../api/axios';
 import jsPDF from 'jspdf';
-import { Download, Search, Filter } from 'lucide-react';
+import { Download, Search, Briefcase, DollarSign, Star, Clock, HelpCircle } from 'lucide-react';
 
 const StudentFeedbacks = () => {
     const [feedbacks, setFeedbacks] = useState([]);
     const [search, setSearch] = useState('');
-    const [deptFilter, setDeptFilter] = useState(''); // Optional: client-side filter if not passed to API
 
     useEffect(() => {
         const fetchFeedbacks = async () => {
             try {
                 // Fetch public feedbacks. 
-                // We'll filter by search term on client side for smoother experience unless large data
                 const { data } = await api.get('/feedback/public', {
                     params: { company: search }
                 });
@@ -21,62 +19,99 @@ const StudentFeedbacks = () => {
                 console.error(error);
             }
         };
-        // Debounce search ideally, but simple here
         const handler = setTimeout(() => fetchFeedbacks(), 500);
         return () => clearTimeout(handler);
     }, [search]);
 
     const downloadPDF = (item) => {
         const doc = new jsPDF();
+        let y = 20;
 
-        // Header
-        doc.setFillColor(79, 70, 229); // Indigo 600
-        doc.rect(0, 0, 210, 40, 'F');
-        doc.setFontSize(22);
+        // Title
+        doc.setFillColor(79, 70, 229);
+        doc.rect(0, 0, 210, 30, 'F');
+        doc.setFontSize(18);
         doc.setTextColor(255, 255, 255);
-        doc.text("Placement Feedback Report", 105, 25, null, null, 'center');
+        doc.text("Placement Experience Report", 105, 20, null, null, 'center');
 
-        // Content
-        let y = 55;
+        y = 40;
         doc.setTextColor(33, 33, 33);
+
+        // Core Info
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
-        doc.text(item.companyName, 20, y);
+        doc.text(item.companyName, 14, y);
+        y += 7;
 
-        doc.setFontSize(10);
+        doc.setFontSize(11);
         doc.setFont("helvetica", "normal");
+        doc.text(`${item.jobRole} | ${item.package || 'N/A'} | ${item.overallDifficulty}`, 14, y);
+        y += 7;
         doc.setTextColor(100, 100, 100);
-        doc.text(`${item.roundType} | ${item.difficulty} | ${item.student.department}`, 20, y + 7);
+        doc.text(`Shared by: ${item.student.name} (${item.student.department})`, 14, y);
 
-        y += 20;
+        y += 15;
+        doc.setDrawColor(200, 200, 200);
+        doc.line(14, y, 196, y);
+        y += 10;
 
-        const addSection = (title, content) => {
-            if (!content) return;
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(79, 70, 229);
-            doc.text(title, 20, y);
-            y += 8;
-
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(50, 50, 50);
-
-            const splitText = doc.splitTextToSize(content, 170);
-            doc.text(splitText, 20, y);
-            y += (splitText.length * 5) + 10;
+        const addText = (text, size = 10, color = [50, 50, 50], isBold = false) => {
+            doc.setFontSize(size);
+            doc.setTextColor(...color);
+            doc.setFont("helvetica", isBold ? "bold" : "normal");
+            const split = doc.splitTextToSize(text || 'N/A', 180);
+            doc.text(split, 14, y);
+            y += (split.length * 5) + 4;
         };
 
-        addSection('Interview Experience', item.experience);
-        addSection('Preparation Tips', item.tips);
-        addSection('Suggestions', item.suggestions);
+        // Rounds
+        item.rounds.forEach((round, index) => {
+            if (y > 250) { doc.addPage(); y = 20; }
 
-        // Footer
-        doc.setFontSize(8);
-        doc.setTextColor(150, 150, 150);
-        doc.text(`Generated on ${new Date().toLocaleDateString()} by Placement Portal`, 105, 280, null, null, 'center');
+            doc.setFillColor(245, 247, 255);
+            doc.rect(14, y - 5, 182, 18, 'F');
+            doc.setFontSize(12);
+            doc.setTextColor(79, 70, 229);
+            doc.setFont("helvetica", "bold");
+            doc.text(`Round ${round.roundNumber}: ${round.roundType}`, 18, y + 6);
+            y += 20;
 
-        doc.save(`${item.companyName}_Feedback_${item.student.name}.pdf`);
+            doc.setFontSize(10);
+            doc.setTextColor(33, 33, 33);
+            doc.text(`Duration: ${round.duration || '-'} | Difficulty: ${round.difficulty}`, 14, y);
+            y += 8;
+
+            if (round.questions) {
+                doc.setFont("helvetica", "bold");
+                doc.text("Questions:", 14, y);
+                y += 5;
+                addText(round.questions);
+            }
+
+            if (round.experience) {
+                doc.setFont("helvetica", "bold");
+                doc.text("Experience:", 14, y);
+                y += 5;
+                addText(round.experience);
+            }
+            y += 5;
+        });
+
+        // Overall Tips
+        if (y > 250) { doc.addPage(); y = 20; }
+        doc.setFontSize(14);
+        doc.setTextColor(79, 70, 229);
+        doc.text("Overall Insights", 14, y);
+        y += 10;
+
+        addText("Preparation Tips:", 11, [0, 0, 0], true);
+        addText(item.tips);
+
+        y += 5;
+        addText("Suggestions for Juniors:", 11, [0, 0, 0], true);
+        addText(item.suggestions);
+
+        doc.save(`${item.companyName}_${item.student.name}_Feedback.pdf`);
     };
 
     return (
@@ -89,7 +124,7 @@ const StudentFeedbacks = () => {
                     <input
                         type="text"
                         placeholder="Search Company..."
-                        className="pl-10 pr-4 py-2 border border-gray-200 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium text-sm w-full md:w-64"
+                        className="pl-10 pr-4 py-2 border border-gray-200 rounded-full focus:ring-2 focus:ring-indigo-500 w-full md:w-64"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -101,22 +136,37 @@ const StudentFeedbacks = () => {
                     <div key={item.id} className="bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 p-6 flex flex-col transition-all">
                         <div className="flex justify-between items-start mb-4">
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900">{item.companyName}</h3>
-                                <p className="text-xs text-gray-500 font-medium">{item.roundType}</p>
+                                <h3 className="text-xl font-bold text-gray-900">{item.companyName}</h3>
+                                <div className="flex items-center text-sm text-gray-600 mt-1">
+                                    <Briefcase className="w-4 h-4 mr-1" /> {item.jobRole}
+                                </div>
                             </div>
                             <span className={`px-2 py-1 rounded text-xs font-bold 
-                                ${item.difficulty === 'Hard' ? 'bg-red-50 text-red-600' :
-                                    item.difficulty === 'Medium' ? 'bg-yellow-50 text-yellow-600' :
+                                ${item.overallDifficulty === 'Hard' ? 'bg-red-50 text-red-600' :
+                                    item.overallDifficulty === 'Medium' ? 'bg-yellow-50 text-yellow-600' :
                                         'bg-green-50 text-green-600'}`}>
-                                {item.difficulty}
+                                {item.overallDifficulty}
                             </span>
                         </div>
 
-                        <p className="text-gray-600 text-sm line-clamp-4 flex-1 mb-6">
-                            {item.experience}
-                        </p>
+                        <div className="flex items-center text-sm text-gray-500 mb-4">
+                            <DollarSign className="w-4 h-4 mr-1" /> {item.package || 'Not disclosed'}
+                        </div>
 
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                        <div className="mb-4 bg-gray-50 p-3 rounded-lg">
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Interview Rounds</h4>
+                            <div className="space-y-2">
+                                {item.rounds.slice(0, 3).map((r, i) => (
+                                    <div key={i} className="flex justify-between text-sm">
+                                        <span>R{r.roundNumber}: {r.roundType}</span>
+                                        <span className="text-gray-400 text-xs">{r.difficulty}</span>
+                                    </div>
+                                ))}
+                                {item.rounds.length > 3 && <div className="text-xs text-indigo-600">+{item.rounds.length - 3} more rounds</div>}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-auto">
                             <div className="text-xs text-gray-500">
                                 <span className="font-semibold">{item.student.name}</span> <br />
                                 {item.student.department}
@@ -124,20 +174,19 @@ const StudentFeedbacks = () => {
                             <button
                                 onClick={() => downloadPDF(item)}
                                 className="flex items-center text-indigo-600 hover:text-indigo-700 text-sm font-medium transition-colors p-2 hover:bg-indigo-50 rounded-lg"
-                                title="Download PDF"
                             >
-                                <Download className="w-4 h-4" />
+                                <Download className="w-4 h-4 mr-1" /> PDF
                             </button>
                         </div>
                     </div>
                 ))}
-
-                {feedbacks.length === 0 && (
-                    <div className="col-span-full text-center py-12 text-gray-400">
-                        No feedbacks found matching your search.
-                    </div>
-                )}
             </div>
+
+            {feedbacks.length === 0 && (
+                <div className="text-center py-12 text-gray-400">
+                    No approved feedbacks available.
+                </div>
+            )}
         </div>
     );
 };
