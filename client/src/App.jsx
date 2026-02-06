@@ -12,6 +12,7 @@ import AdminFeedbacks from './pages/admin/AdminFeedbacks';
 
 import CoordinatorDashboard from './pages/coordinator/CoordinatorDashboard';
 import CoordinatorApproved from './pages/coordinator/CoordinatorApproved';
+import CoordinatorDrives from './pages/coordinator/CoordinatorDrives';
 
 import StudentSubmit from './pages/student/StudentSubmit';
 import StudentFeedbacks from './pages/student/StudentFeedbacks';
@@ -43,6 +44,7 @@ function App() {
                         <Route path="/coordinator" element={<Layout />}>
                             <Route path="dashboard" element={<CoordinatorDashboard />} />
                             <Route path="approved" element={<CoordinatorApproved />} />
+                            <Route path="drives" element={<CoordinatorDrives />} />
                         </Route>
                     </Route>
 

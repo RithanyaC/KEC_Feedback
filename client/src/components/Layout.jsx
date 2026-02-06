@@ -40,6 +40,7 @@ const Layout = () => {
                     {user?.role === 'COORDINATOR' && (
                         <>
                             <NavItem to="/coordinator/dashboard" icon={Home} label="Pending Reviews" />
+                            <NavItem to="/coordinator/drives" icon={UserPlus} label="Manage Drives" />
                             <NavItem to="/coordinator/approved" icon={List} label="Approved Feedbacks" />
                         </>
                     )}

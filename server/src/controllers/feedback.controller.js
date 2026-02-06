@@ -5,21 +5,28 @@ const prisma = new PrismaClient();
 
 const feedbackSchema = z.object({
     companyName: z.string().min(1),
-    roundType: z.string().min(1),
-    experience: z.string().min(10),
-    difficulty: z.string(),
+    driveId: z.string().optional(),
+    jobRole: z.string().min(1),
+    package: z.string().optional(),
+    overallDifficulty: z.string(),
     tips: z.string().optional(),
     suggestions: z.string().optional(),
+    rounds: z.array(z.object({
+        roundNumber: z.number(),
+        roundType: z.string().min(1),
+        duration: z.string().optional(),
+        difficulty: z.string(),
+        questions: z.string().optional(),
+        experience: z.string().optional()
+    })).min(1)
 });
 
 const submitFeedback = async (req, res) => {
     try {
         const data = feedbackSchema.parse(req.body);
         const userId = req.user.id;
-        const userDept = req.user.department; // Assume attached by auth middleware or fetched
 
-        // Helper to ensure we have department if not in token
-        let department = userDept;
+        let department = req.user.department;
         if (!department) {
             const user = await prisma.user.findUnique({ where: { id: userId } });
             department = user.department;
@@ -27,11 +34,21 @@ const submitFeedback = async (req, res) => {
 
         const feedback = await prisma.feedback.create({
             data: {
-                ...data,
                 studentId: userId,
+                driveId: data.driveId,
+                companyName: data.companyName,
                 department: department,
+                jobRole: data.jobRole,
+                package: data.package,
+                overallDifficulty: data.overallDifficulty,
+                tips: data.tips,
+                suggestions: data.suggestions,
                 status: 'PENDING',
+                rounds: {
+                    create: data.rounds
+                }
             },
+            include: { rounds: true }
         });
 
         res.status(201).json({ message: 'Feedback submitted successfully.', feedback });
@@ -39,7 +56,7 @@ const submitFeedback = async (req, res) => {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ errors: error.errors });
         }
-        console.error(error);
+        console.error("Submit Feedback Error:", error);
         res.status(500).json({ message: 'Internal server error.' });
     }
 };

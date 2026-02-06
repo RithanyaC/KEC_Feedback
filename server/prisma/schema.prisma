@@ -21,21 +21,63 @@ model User {
   updatedAt   DateTime @updatedAt
   
   feedbacks   Feedback[]
+  eligibility DriveEligibility[]
+}
+
+model PlacementDrive {
+  id          String   @id @default(uuid())
+  companyName String
+  date        DateTime
+  department  String   // Department this drive is for (or "ALL")
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  eligibleStudents DriveEligibility[]
+  feedbacks        Feedback[]
+}
+
+model DriveEligibility {
+  id              String         @id @default(uuid())
+  studentId       String
+  driveId         String
+  student         User           @relation(fields: [studentId], references: [id])
+  drive           PlacementDrive @relation(fields: [driveId], references: [id])
+  isEligible      Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+
+  @@unique([studentId, driveId])
 }
 
 model Feedback {
-  id              String   @id @default(uuid())
-  studentId       String
-  student         User     @relation(fields: [studentId], references: [id])
-  companyName     String
-  roundType       String
-  experience      String
-  difficulty      String
-  tips            String?
-  suggestions     String?
-  status          String   @default("PENDING") // "PENDING", "APPROVED", "REJECTED"
-  remarks         String? // Rejection remarks
-  department      String // Cached/Copied from student for easier filtering
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String   @id @default(uuid())
+  studentId         String
+  student           User     @relation(fields: [studentId], references: [id])
+  driveId           String?
+  drive             PlacementDrive? @relation(fields: [driveId], references: [id])
+  companyName       String
+  jobRole           String   // e.g. Software Engineer
+  package           String?  // e.g. 10 LPA
+  overallDifficulty String   // Easy, Medium, Hard
+  tips              String?
+  suggestions       String?
+  status            String   @default("PENDING") // "PENDING", "APPROVED", "REJECTED"
+  remarks           String?
+  department        String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  rounds            FeedbackRound[]
+}
+
+model FeedbackRound {
+  id          String   @id @default(uuid())
+  feedbackId  String
+  feedback    Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  roundNumber Int
+  roundType   String   // e.g. "Aptitude", "Technical", "HR"
+  duration    String?  // e.g. "45 mins"
+  difficulty  String   // "Easy", "Medium", "Hard"
+  questions   String?  // List of questions asked
+  experience  String?  // Description of the round
 }
