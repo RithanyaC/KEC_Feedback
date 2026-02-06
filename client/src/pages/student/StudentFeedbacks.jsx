@@ -8,6 +8,11 @@ const StudentFeedbacks = () => {
     const [search, setSearch] = useState('');
 
     useEffect(() => {
+        if (!search.trim()) {
+            setFeedbacks([]);
+            return;
+        }
+
         const fetchFeedbacks = async () => {
             try {
                 // Fetch public feedbacks. 
@@ -183,8 +188,19 @@ const StudentFeedbacks = () => {
             </div>
 
             {feedbacks.length === 0 && (
-                <div className="text-center py-12 text-gray-400">
-                    No approved feedbacks available.
+                <div className="text-center py-20">
+                    {search.trim() ? (
+                        <div className="text-gray-400">
+                            <p className="text-lg font-medium">No results found for "{search}"</p>
+                            <p className="text-sm mt-1">Try checking the spelling or searching for another company.</p>
+                        </div>
+                    ) : (
+                        <div className="text-gray-500">
+                            <Search className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                            <h3 className="text-lg font-bold text-gray-700">Search to view feedback</h3>
+                            <p className="text-sm mt-2 max-w-sm mx-auto">Enter a company name above to see interview experiences shared by students from ALL departments.</p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
